@@ -1,3 +1,13 @@
+from google import genai
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
+
 def load_document(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         text = file.read()
@@ -12,6 +22,21 @@ def chunk_text(text, chunk_size=1000):
         chunks.append(chunk)
 
     return chunks
+
+def create_embedding(text):
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text
+    )
+
+    return result.embeddings[0].values
+
+embedding = create_embedding(
+    "Odysseus returns to Ithaca after many years."
+)
+
+print('Embedding dimensions:', len(embedding))
+print(embedding[:10])
 
 text = load_document("data/the-odyssey.txt")
 
