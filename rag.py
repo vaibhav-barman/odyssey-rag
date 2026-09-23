@@ -2,6 +2,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 import pickle
+import numpy as np
 
 load_dotenv()
 
@@ -56,6 +57,14 @@ def load_embeddings(file_path):
     with open(file_path, "rb") as file:
         return pickle.load(file)
 
+def cosine_similarity(a, b):
+    a = np.array(a)
+    b = np.array(b)
+
+    return np.dot(a, b) / (
+        np.linalg.norm(a) * np.linalg.norm(b)
+    )
+
 text = load_document("data/the-odyssey.txt")
 
 print('Characters:', len(text))
@@ -82,3 +91,10 @@ else:
     )
 
 print("Number of embedded chunks:", len(embedded_chunks))
+
+test_similarity = cosine_similarity(
+    embedded_chunks[0]["embedding"],
+    embedded_chunks[1]["embedding"],
+)
+
+print("Similarity between first two chunks:", test_similarity)
