@@ -65,6 +65,31 @@ def cosine_similarity(a, b):
         np.linalg.norm(a) * np.linalg.norm(b)
     )
 
+def retrieve_chunks(question, embedded_chunks, top_k=3):
+    question_embedding = create_embedding(question)
+
+    results = []
+
+    for item in embedded_chunks:
+        score = cosine_similarity(
+            question_embedding, 
+            item["embedding"]
+        )
+
+        results.append(
+            {
+                "text": item["text"],
+                "score": score
+            }
+        )
+
+    results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return results[:top_k]
+
 text = load_document("data/the-odyssey.txt")
 
 print('Characters:', len(text))
@@ -92,9 +117,16 @@ else:
 
 print("Number of embedded chunks:", len(embedded_chunks))
 
-test_similarity = cosine_similarity(
-    embedded_chunks[0]["embedding"],
-    embedded_chunks[1]["embedding"],
+question = "Who is Odysseus?"
+
+results = retrieve_chunks(
+    question, 
+    embedded_chunks, 
+    top_k=3
 )
 
-print("Similarity between first two chunks:", test_similarity)
+print("\nTop Results:\n")
+for i, result in enumerate(results):
+    print(f"\n--- Result {i+1} ---")
+    print(f"Similarity: {result['score']:.4f}")
+    print(result["text"][:1000])
