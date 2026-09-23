@@ -148,21 +148,30 @@ else:
 
 print("Number of embedded chunks:", len(embedded_chunks))
 
-question = "Why was Odysseus unable to return home?"
+while True:
+    question = input("\nAsk about The Odyssey (or type 'exit'): ")
 
-results = retrieve_chunks(
-    question, 
-    embedded_chunks, 
-    top_k=3
-)
+    if question.lower() == "exit":
+        print("Goodbye!")
+        break
 
-answer = generate_answer(
-    question, 
-    results
-)
+    results = retrieve_chunks(
+        question, 
+        embedded_chunks, 
+        top_k=3
+    )
 
-print("\nQuestion")
-print(question)
+    print("\nRetrieved Context: ")
 
-print("\nAnswer")
-print(answer)
+    for i, result in enumerate(results):
+        print(f"\n--- Chunk {i + 1} ---")
+        print(f"Similarity: {result['score']:.4f}")
+        print(result["text"][:500])
+
+    answer = generate_answer(
+        question, 
+        results
+    )
+
+    print("\nAnswer")
+    print(answer)
