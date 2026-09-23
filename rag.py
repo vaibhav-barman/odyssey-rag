@@ -90,6 +90,37 @@ def retrieve_chunks(question, embedded_chunks, top_k=3):
 
     return results[:top_k]
 
+def generate_answer(question, retrieved_chunks):
+    context = "\n\n".join(
+        item["text"]
+        for item in retrieved_chunks
+    )
+
+    prompt = f"""
+        You are a question-answering assistant for Homer's The Odyssey.
+
+        Answer the user's question using ONLY the provided context.
+
+        If the answer cannot be found in the context, say:
+        "I could not find the answer in the provided text."
+
+        Do not use outside knowledge.
+        Do not invent information.
+
+        Context: {context}
+
+        Question: {question}
+
+Answer:
+"""
+
+    response = client.models.generate_content(
+        model="gemini-3.5-flash-lite",
+        contents=prompt
+    )
+
+    return response.text
+
 text = load_document("data/the-odyssey.txt")
 
 print('Characters:', len(text))
@@ -117,7 +148,7 @@ else:
 
 print("Number of embedded chunks:", len(embedded_chunks))
 
-question = "Who is Odysseus?"
+question = "Why was Odysseus unable to return home?"
 
 results = retrieve_chunks(
     question, 
@@ -125,8 +156,13 @@ results = retrieve_chunks(
     top_k=3
 )
 
-print("\nTop Results:\n")
-for i, result in enumerate(results):
-    print(f"\n--- Result {i+1} ---")
-    print(f"Similarity: {result['score']:.4f}")
-    print(result["text"][:1000])
+answer = generate_answer(
+    question, 
+    results
+)
+
+print("\nQuestion")
+print(question)
+
+print("\nAnswer")
+print(answer)
