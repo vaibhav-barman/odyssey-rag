@@ -16,13 +16,16 @@ def load_document(file_path):
 
     return text
 
-def chunk_text(text, chunk_size=1000):
+def chunk_text(text, chunk_size=1000, overlap=200):
     chunks = []
 
-    for i in range(0, len(text), chunk_size):
-        chunk = text[i: i + chunk_size]
-        chunks.append(chunk)
+    start = 0
 
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start = end - overlap
     return chunks
 
 def create_embedding(text):
