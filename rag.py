@@ -1,4 +1,5 @@
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 import os
 import pickle
@@ -45,8 +46,11 @@ def chunk_text(text, chunk_size=1000, overlap=200):
 
 def create_embedding(text):
     result = client.models.embed_content(
-        model="gemini-embedding-001",
-        contents=text
+        model="gemini-embedding-2",
+        contents=text,
+        config=types.EmbedContentConfig(
+            output_dimensionality=768
+        )
     )
 
     return result.embeddings[0].values
