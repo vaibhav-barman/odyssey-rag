@@ -55,18 +55,44 @@ def create_embedding(text):
 
     return result.embeddings[0].values
 
-def create_chunk_embeddings(chunks):
+def create_chunk_embeddings(chunks, file_path):
     embedded_chunks = []
-    for i, chunk in enumerate(chunks):
-        print(f"Embedded chunk {i+1}/{len(chunks)}")
+
+    if os.path.exists(file_path):
+        print("Found existing embedding progress.")
+        embedded_chunks = load_embeddings(file_path)
+
+        print(
+            f"Already embedded: "
+            f"{len(embedded_chunks)} / {len(chunks)}"
+        )
+
+    start_index = len(embedded_chunks)
+
+    for i in range(start_index, len(chunks)):
+        chunk = chunks[i]
+        print(
+            f"Embedding chunk "
+            f"{i+1}/{len(chunks)}"
+        )
 
         embedding = create_embedding(chunk)
 
         embedded_chunks.append(
             {
-                "text" : chunk, 
-                "embedding" : embedding
+                "text": chunk,
+                "embedding": embedding
             }
+        )
+
+        save_embeddings(
+            embedded_chunks,
+            file_path
+        )
+
+        print(
+            f"Saved Progress: "
+            f"{len(embedded_chunks)} / {len(chunks)}"
         )
 
     return embedded_chunks
@@ -158,15 +184,22 @@ print("Number of chunks:", len(chunks))
 embedding_file = "data/embeddings.pkl"
 
 if os.path.exists(embedding_file):
-    print("Loading saved embeddings...")
     embedded_chunks = load_embeddings(embedding_file)
 
+    if len(embedded_chunks) == len(chunks):
+        print("Loading saved embedding ... ")
+        print(f"Loaded {len(embedded_chunks)} embeddings.")
+
+    else:
+        print("Embedding file is incomplete")
+        embedded_chunks = create_chunk_embeddings(
+            chunks,
+            embedding_file
+        )
 else:
     print("Creating embeddings...")
-    embedded_chunks = create_chunk_embeddings(chunks)
-
-    save_embeddings(
-        embedded_chunks,
+    embedded_chunks = create_chunk_embeddings(
+        chunks,
         embedding_file
     )
 
