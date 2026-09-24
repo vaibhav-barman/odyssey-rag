@@ -16,6 +16,21 @@ def load_document(file_path):
 
     return text
 
+def clean_document(text):
+    start_marker = "*** START OF THE PROJECT GUTENBERG EBOOK THE ODYSSEY ***"
+    end_marker = "*** END OF THE PROJECT GUTENBERG EBOOK THE ODYSSEY ***"
+
+    start = text.find(start_marker)
+    end = text.find(end_marker)
+
+    if start != -1:
+        text = text[start + len(start_marker):]
+
+    if end != -1:
+        text = text[:end]
+
+    return text.strip()
+
 def chunk_text(text, chunk_size=1000, overlap=200):
     chunks = []
 
@@ -125,6 +140,8 @@ Answer:
     return response.text
 
 text = load_document("data/the-odyssey.txt")
+
+text = clean_document(text)
 
 print('Characters:', len(text))
 
