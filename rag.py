@@ -80,6 +80,7 @@ def create_chunk_embeddings(chunks, file_path):
 
         embedded_chunks.append(
             {
+                "id": i,
                 "text": chunk,
                 "embedding": embedding
             }
@@ -103,7 +104,13 @@ def save_embeddings(data, file_path):
 
 def load_embeddings(file_path):
     with open(file_path, "rb") as file:
-        return pickle.load(file)
+        data = pickle.load(file)
+
+    for i, item in enumerate(data):
+        if "id" not in item:
+            item["id"] = i
+
+    return data
 
 def cosine_similarity(a, b):
     a = np.array(a)
@@ -113,7 +120,7 @@ def cosine_similarity(a, b):
         np.linalg.norm(a) * np.linalg.norm(b)
     )
 
-def retrieve_chunks(question, embedded_chunks, top_k=3):
+def retrieve_chunks(question, embedded_chunks, top_k=5):
     question_embedding = create_embedding(question)
 
     results = []
@@ -126,6 +133,7 @@ def retrieve_chunks(question, embedded_chunks, top_k=3):
 
         results.append(
             {
+                "id": item["id"],
                 "text": item["text"],
                 "score": score
             }
@@ -215,13 +223,14 @@ while True:
     results = retrieve_chunks(
         question, 
         embedded_chunks, 
-        top_k=3
+        top_k=5
     )
 
     print("\nRetrieved Context: ")
 
-    for i, result in enumerate(results):
-        print(f"\n--- Chunk {i + 1} ---")
+    for rank, result in enumerate(results, start=1):
+        print(f"\n--- Rank {rank} ---")
+        print(f"Chunk ID: {result['id']}")
         print(f"Similarity: {result['score']:.4f}")
         print(result["text"][:500])
 
