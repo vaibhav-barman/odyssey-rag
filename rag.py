@@ -146,26 +146,47 @@ def retrieve_chunks(question, embedded_chunks, top_k=5):
 
     return results[:top_k]
 
+def format_context(retrieved_chunks):
+    context_parts = []
+
+    for item in retrieved_chunks:
+        context_parts.append(
+            f"""
+SOURCE CHUNK {item['id']}
+SIMILARITY SCORE: {item['score']:.4f}
+
+{item['text']}
+"""
+        )
+
+    return "\n".join(context_parts)
+
 def generate_answer(question, retrieved_chunks):
-    context = "\n\n".join(
-        item["text"]
-        for item in retrieved_chunks
-    )
+    context = format_context(retrieved_chunks)
 
     prompt = f"""
-        You are a question-answering assistant for Homer's The Odyssey.
+You are a question-answering assistant for Homer's The Odyssey.
 
-        Answer the user's question using ONLY the provided context.
+Your task is to answer the user's question using ONLY the retrieved
+context below.
 
-        If the answer cannot be found in the context, say:
-        "I could not find the answer in the provided text."
+Rules:
+1. Use only information contained in the provided context.
+2. Do not use outside knowledge.
+3. Do not invent or assume facts that are not supported by the context.
+4. If the context does not contain enough information to answer the
+   question, say:
+   "I could not find the answer in the provided text."
+5. Give a concise answer.
+6. When possible, mention the relevant source chunk IDs.
 
-        Do not use outside knowledge.
-        Do not invent information.
+Retrieved context:
 
-        Context: {context}
+{context}
 
-        Question: {question}
+Question:
+
+{question}
 
 Answer:
 """
