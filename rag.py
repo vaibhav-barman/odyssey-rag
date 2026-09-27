@@ -309,12 +309,6 @@ else:
 
 print("Number of embedded chunks:", len(embedded_chunks))
 
-
-# TEMPORARY: Run retrieval evaluation.
-# Remove this call after evaluating and committing the function.
-evaluate_retrieval(embedded_chunks)
-
-
 # -------------------------
 # 9. Interactive RAG
 # -------------------------
