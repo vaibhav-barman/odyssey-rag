@@ -1,3 +1,4 @@
+
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -11,11 +12,17 @@ client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
+
+# -------------------------
+# 1. Document Loading
+# -------------------------
+
 def load_document(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         text = file.read()
 
     return text
+
 
 def clean_document(text):
     start_marker = "*** START OF THE PROJECT GUTENBERG EBOOK THE ODYSSEY ***"
@@ -32,9 +39,13 @@ def clean_document(text):
 
     return text.strip()
 
+
+# -------------------------
+# 2. Text Chunking
+# -------------------------
+
 def chunk_text(text, chunk_size=1000, overlap=200):
     chunks = []
-
     start = 0
 
     while start < len(text):
@@ -42,7 +53,13 @@ def chunk_text(text, chunk_size=1000, overlap=200):
         chunk = text[start:end]
         chunks.append(chunk)
         start = end - overlap
+
     return chunks
+
+
+# -------------------------
+# 3. Embedding Generation
+# -------------------------
 
 def create_embedding(text):
     result = client.models.embed_content(
@@ -54,6 +71,7 @@ def create_embedding(text):
     )
 
     return result.embeddings[0].values
+
 
 def create_chunk_embeddings(chunks, file_path):
     embedded_chunks = []
@@ -71,25 +89,18 @@ def create_chunk_embeddings(chunks, file_path):
 
     for i in range(start_index, len(chunks)):
         chunk = chunks[i]
-        print(
-            f"Embedding chunk "
-            f"{i+1}/{len(chunks)}"
-        )
+
+        print(f"Embedding chunk {i + 1}/{len(chunks)}")
 
         embedding = create_embedding(chunk)
 
-        embedded_chunks.append(
-            {
-                "id": i,
-                "text": chunk,
-                "embedding": embedding
-            }
-        )
+        embedded_chunks.append({
+            "id": i,
+            "text": chunk,
+            "embedding": embedding
+        })
 
-        save_embeddings(
-            embedded_chunks,
-            file_path
-        )
+        save_embeddings(embedded_chunks, file_path)
 
         print(
             f"Saved Progress: "
@@ -98,9 +109,11 @@ def create_chunk_embeddings(chunks, file_path):
 
     return embedded_chunks
 
+
 def save_embeddings(data, file_path):
     with open(file_path, "wb") as file:
         pickle.dump(data, file)
+
 
 def load_embeddings(file_path):
     with open(file_path, "rb") as file:
@@ -112,6 +125,11 @@ def load_embeddings(file_path):
 
     return data
 
+
+# -------------------------
+# 4. Similarity & Retrieval
+# -------------------------
+
 def cosine_similarity(a, b):
     a = np.array(a)
     b = np.array(b)
@@ -120,6 +138,7 @@ def cosine_similarity(a, b):
         np.linalg.norm(a) * np.linalg.norm(b)
     )
 
+
 def retrieve_chunks(question, embedded_chunks, top_k=5):
     question_embedding = create_embedding(question)
 
@@ -127,17 +146,15 @@ def retrieve_chunks(question, embedded_chunks, top_k=5):
 
     for item in embedded_chunks:
         score = cosine_similarity(
-            question_embedding, 
+            question_embedding,
             item["embedding"]
         )
 
-        results.append(
-            {
-                "id": item["id"],
-                "text": item["text"],
-                "score": score
-            }
-        )
+        results.append({
+            "id": item["id"],
+            "text": item["text"],
+            "score": score
+        })
 
     results.sort(
         key=lambda x: x["score"],
@@ -145,6 +162,11 @@ def retrieve_chunks(question, embedded_chunks, top_k=5):
     )
 
     return results[:top_k]
+
+
+# -------------------------
+# 5. Context Formatting
+# -------------------------
 
 def format_context(retrieved_chunks):
     context_parts = []
@@ -160,6 +182,11 @@ SIMILARITY SCORE: {item['score']:.4f}
         )
 
     return "\n".join(context_parts)
+
+
+# -------------------------
+# 6. Answer Generation
+# -------------------------
 
 def generate_answer(question, retrieved_chunks):
     context = format_context(retrieved_chunks)
@@ -198,17 +225,62 @@ Answer:
 
     return response.text
 
-text = load_document("data/the-odyssey.txt")
 
+# -------------------------
+# 7. Retrieval Evaluation
+# -------------------------
+
+def evaluate_retrieval(embedded_chunks):
+    test_questions = [
+        "Who is Odysseus's son?",
+        "Who is Penelope?",
+        "Why did Odysseus leave Ithaca?",
+        "Why were the suitors staying in Odysseus's house?",
+        "What happened to Odysseus's crew?",
+        "Who is Telemachus?",
+        "Who is Athena?",
+        "Who is Circe?",
+    ]
+
+    print("\n" + "=" * 60)
+    print("RETRIEVAL EVALUATION")
+    print("=" * 60)
+
+    for question in test_questions:
+        print(f"\nQuestion: {question}")
+
+        results = retrieve_chunks(
+            question,
+            embedded_chunks,
+            top_k=5
+        )
+
+        for rank, result in enumerate(results, start=1):
+            print(
+                f"\nRank: {rank}"
+                f" | Chunk ID: {result['id']}"
+                f" | Score: {result['score']:.4f}"
+            )
+
+            print(
+                result["text"][:300].replace("\n", " ")
+            )
+
+        print("\n" + "-" * 60)
+
+
+# -------------------------
+# 8. Main Program
+# -------------------------
+
+text = load_document("data/the-odyssey.txt")
 text = clean_document(text)
 
-print('Characters:', len(text))
+print("Characters:", len(text))
 
 chunks = chunk_text(text)
 
 print("Number of chunks:", len(chunks))
-# print("\nFirst Chunk:\n")
-# print(chunks[0])
 
 embedding_file = "data/embeddings.pkl"
 
@@ -216,17 +288,20 @@ if os.path.exists(embedding_file):
     embedded_chunks = load_embeddings(embedding_file)
 
     if len(embedded_chunks) == len(chunks):
-        print("Loading saved embedding ... ")
+        print("Loading saved embeddings...")
         print(f"Loaded {len(embedded_chunks)} embeddings.")
 
     else:
-        print("Embedding file is incomplete")
+        print("Embedding file is incomplete.")
+
         embedded_chunks = create_chunk_embeddings(
             chunks,
             embedding_file
         )
+
 else:
     print("Creating embeddings...")
+
     embedded_chunks = create_chunk_embeddings(
         chunks,
         embedding_file
@@ -234,20 +309,32 @@ else:
 
 print("Number of embedded chunks:", len(embedded_chunks))
 
+
+# TEMPORARY: Run retrieval evaluation.
+# Remove this call after evaluating and committing the function.
+evaluate_retrieval(embedded_chunks)
+
+
+# -------------------------
+# 9. Interactive RAG
+# -------------------------
+
 while True:
-    question = input("\nAsk about The Odyssey (or type 'exit'): ")
+    question = input(
+        "\nAsk about The Odyssey (or type 'exit'): "
+    )
 
     if question.lower() == "exit":
         print("Goodbye!")
         break
 
     results = retrieve_chunks(
-        question, 
-        embedded_chunks, 
+        question,
+        embedded_chunks,
         top_k=5
     )
 
-    print("\nRetrieved Context: ")
+    print("\nRetrieved Context:")
 
     for rank, result in enumerate(results, start=1):
         print(f"\n--- Rank {rank} ---")
@@ -256,7 +343,7 @@ while True:
         print(result["text"][:500])
 
     answer = generate_answer(
-        question, 
+        question,
         results
     )
 
